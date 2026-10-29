@@ -54,3 +54,37 @@ def test_query_with_trailing_semicolon_is_allowed():
 def test_nonexistent_column_is_rejected():
     valid, _ = validate_sql("SELECT unknown_column FROM sales")
     assert valid is False
+
+
+def test_count_aggregation_is_allowed():
+    valid, _ = validate_sql(
+        "SELECT COUNT(*) AS total_rows FROM sales"
+    )
+    assert valid is True
+
+
+def test_sum_aggregation_is_allowed():
+    valid, _ = validate_sql(
+        "SELECT SUM(Sales) AS total_sales FROM sales"
+    )
+    assert valid is True
+
+
+def test_unapproved_function_is_rejected():
+    valid, _ = validate_sql(
+        "SELECT LOAD_EXTENSION('example') FROM sales"
+    )
+    assert valid is False
+
+
+def test_query_from_sqlite_system_table_is_rejected():
+    valid, _ = validate_sql(
+        "SELECT name FROM sqlite_master"
+    )
+    assert valid is False
+
+
+def test_empty_whitespace_query_is_rejected():
+    valid, _ = validate_sql("   ")
+    assert valid is False
+
