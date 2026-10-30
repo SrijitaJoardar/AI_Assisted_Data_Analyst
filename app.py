@@ -6,6 +6,7 @@ from src.agent.data_analyst_agent import (
     AgentError,
 )
 from src.analytics.offline_analytics import run_offline_analysis
+from src.analytics.visualization import create_bar_chart
 
 st.set_page_config(
     page_title="AI Data Analyst",
@@ -90,6 +91,14 @@ if st.button("Analyze", type="primary"):
 
             st.subheader("Analysis")
             st.write(analysis["answer"])
+
+            # Visual analytics
+            if analysis["results"]:
+                fig = create_bar_chart(analysis["results"])
+
+                if fig is not None:
+                    st.subheader("Visual Analytics")
+                    st.plotly_chart(fig, width="stretch")
 
             with st.expander("View generated SQL"):
                 st.code(analysis["sql"], language="sql")
