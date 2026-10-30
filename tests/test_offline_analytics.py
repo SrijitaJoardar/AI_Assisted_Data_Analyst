@@ -59,3 +59,73 @@ def test_unsupported_question_returns_none():
     )
 
     assert result is None
+
+def test_highest_profit_region():
+    result = run_offline_analysis(
+        "Which region generated the highest total profit?"
+    )
+
+    assert result is not None
+    assert result["mode"] == "offline"
+    assert "Region" in result["results"][0]
+    assert "total_profit" in result["results"][0]
+    assert len(result["results"]) == 1
+
+
+def test_highest_sales_category():
+    result = run_offline_analysis(
+        "Which product category generated the highest sales?"
+    )
+
+    assert result is not None
+    assert result["mode"] == "offline"
+    assert "Category" in result["results"][0]
+    assert "total_sales" in result["results"][0]
+    assert len(result["results"]) == 1
+
+
+def test_average_quantity_by_segment():
+    result = run_offline_analysis(
+        "What is the average quantity sold by segment?"
+    )
+    print("SQL:", result["sql"])
+    print("Results:", result["results"])
+    print("Answer:", result["answer"])
+
+    assert result is not None
+    assert result["mode"] == "offline"
+    assert len(result["results"]) == 3
+    assert "Segment" in result["results"][0]
+    assert "average_quantity" in result["results"][0]
+def test_maximum_sales_category():
+    result = run_offline_analysis(
+        "Which category had the maximum sales?"
+    )
+
+    assert result is not None
+    assert result["mode"] == "offline"
+    assert "Category" in result["results"][0]
+    assert "total_sales" in result["results"][0]
+
+
+def test_most_profit_region():
+    result = run_offline_analysis(
+        "Which region made the most profit?"
+    )
+
+    assert result is not None
+    assert result["mode"] == "offline"
+    assert "Region" in result["results"][0]
+    assert "total_profit" in result["results"][0]
+
+
+def test_mean_quantity_by_segment():
+    result = run_offline_analysis(
+        "Show the mean quantity for each segment."
+    )
+
+    assert result is not None
+    assert result["mode"] == "offline"
+    assert len(result["results"]) == 3
+    assert "Segment" in result["results"][0]
+    assert "average_quantity" in result["results"][0]

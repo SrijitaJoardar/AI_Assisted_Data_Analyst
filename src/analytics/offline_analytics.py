@@ -113,7 +113,76 @@ def run_offline_analysis(question: str) -> dict | None:
                 f"{row['sub_category']} had the lowest total profit, "
                 f"at {format_currency(row['total_profit'])}."
             )
+    elif (
+                    any(
+                        phrase in normalized_question
+                        for phrase in ("highest total profit", "most profit", "maximum profit")
+                    )
+                    and "region" in normalized_question
+            ):
+        sql = """
+            SELECT Region, ROUND(SUM(Profit), 2) AS total_profit
+            FROM sales
+            GROUP BY Region
+            ORDER BY total_profit DESC
+            LIMIT 1
+        """
+        rows = run_query(sql)
 
+        if not rows:
+            answer = "No matching profit records were found."
+        else:
+            row = rows[0]
+            answer = (
+                f"The {row['Region']} region generated the highest "
+                f"total profit, with {format_currency(row['total_profit'])}."
+            )
+    elif (
+                any(
+                    phrase in normalized_question
+                    for phrase in ("highest sales", "maximum sales", "most sales")
+                )
+                and "categor" in normalized_question
+        ):
+        sql = """
+            SELECT Category, ROUND(SUM(Sales), 2) AS total_sales
+            FROM sales
+            GROUP BY Category
+            ORDER BY total_sales DESC
+            LIMIT 1
+        """
+        rows = run_query(sql)
+
+        if not rows:
+            answer = "No matching sales records were found."
+        else:
+            row = rows[0]
+            answer = (
+                f"{row['Category']} generated the highest total sales, "
+                f"with {format_currency(row['total_sales'])}."
+            )
+    elif (
+                    any(
+                        phrase in normalized_question
+                        for phrase in ("average quantity", "mean quantity")
+                    )
+                    and "segment" in normalized_question
+            ):
+        sql = """
+            SELECT Segment, ROUND(AVG(Quantity), 2) AS average_quantity
+            FROM sales
+            GROUP BY Segment
+            ORDER BY average_quantity DESC
+        """
+        rows = run_query(sql)
+
+        if not rows:
+            answer = "No matching quantity records were found."
+        else:
+            answer = "Average quantity by segment: " + "; ".join(
+                f"{row['Segment']}: {row['average_quantity']}"
+                for row in rows
+            ) + "."
     else:
         return None
 
