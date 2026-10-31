@@ -11,6 +11,10 @@ from src.utils.formatters import format_currency
 logger = logging.getLogger(__name__)
 
 
+# --------------------------------------------------
+# CUSTOM EXCEPTIONS
+# --------------------------------------------------
+
 class AgentError(Exception):
     """Base exception for user-facing agent failures."""
 
@@ -23,6 +27,10 @@ class QueryExecutionError(AgentError):
     """Raised when SQL validation or execution fails."""
 
 
+# --------------------------------------------------
+# ANALYSIS RESULT STRUCTURE
+# --------------------------------------------------
+
 class AnalysisResult(TypedDict):
     """Structured output from a data analyst request."""
 
@@ -31,46 +39,85 @@ class AnalysisResult(TypedDict):
     answer: str
 
 
+# --------------------------------------------------
+# MAIN DATA ANALYST AGENT
+# --------------------------------------------------
+
 def ask_data_analyst_detailed(question: str) -> AnalysisResult:
     """Return the generated SQL, database results, and final answer."""
 
     question = question.strip()
 
     if not question:
+        logger.warning("Empty question received.")
         raise ValueError("Please enter a question.")
 
-    logger.info("Starting detailed data analyst request")
+    logger.info("Starting detailed data analyst request.")
 
-    print("\n[1/3] Generating SQL with Gemini...")
+    # ----------------------------------------------
+    # STEP 1: GENERATE SQL
+    # ----------------------------------------------
+
+    logger.info("Step 1/3: Generating SQL with Gemini.")
 
     try:
         sql = generate_sql(question)
+
+        logger.info("SQL generation completed successfully.")
+
     except Exception as error:
-        logger.exception("SQL generation failed")
+
+        logger.exception("SQL generation failed.")
+
         raise AIServiceError(
             "Unable to generate SQL right now. Please try again shortly."
         ) from error
 
-    print("[2/3] Validating and executing SQL...")
+    # ----------------------------------------------
+    # STEP 2: VALIDATE AND EXECUTE SQL
+    # ----------------------------------------------
+
+    logger.info("Step 2/3: Validating and executing SQL.")
 
     try:
         results = run_query(sql)
+
+        logger.info(
+            "SQL execution completed successfully. Rows returned: %d",
+            len(results),
+        )
+
     except Exception as error:
-        logger.exception("SQL validation or execution failed")
+
+        logger.exception("SQL validation or execution failed.")
+
         raise QueryExecutionError(
             "Unable to execute the generated query. "
             "Please try rephrasing your question."
         ) from error
 
-    print("[3/3] Generating the final answer with Gemini...")
+    # ----------------------------------------------
+    # STEP 3: GENERATE FINAL ANSWER
+    # ----------------------------------------------
+
+    logger.info("Step 3/3: Generating the final answer with Gemini.")
 
     try:
-        answer = generate_answer(question, sql, results)
 
+        answer = generate_answer(
+            question,
+            sql,
+            results,
+        )
+
+        logger.info("Answer generation completed successfully.")
 
     except Exception:
 
-        logger.exception("Answer generation failed")
+        logger.exception(
+            "Gemini answer generation failed. "
+            "Using database results as fallback."
+        )
 
         if results:
 
@@ -83,23 +130,14 @@ def ask_data_analyst_detailed(question: str) -> AnalysisResult:
                 for key, value in row.items():
 
                     if (
-
-                            isinstance(value, (int, float))
-
-                            and not isinstance(value, bool)
-
-                            and key.casefold() in {
-
-                        "sales",
-
-                        "profit",
-
-                        "total_sales",
-
-                        "total_profit",
-
-                    }
-
+                        isinstance(value, (int, float))
+                        and not isinstance(value, bool)
+                        and key.casefold() in {
+                            "sales",
+                            "profit",
+                            "total_sales",
+                            "total_profit",
+                        }
                     ):
 
                         readable_row[key] = format_currency(value)
@@ -111,26 +149,26 @@ def ask_data_analyst_detailed(question: str) -> AnalysisResult:
                 readable_results.append(readable_row)
 
             answer = (
-
                 "The database query succeeded, but Gemini is "
-
                 "temporarily unavailable or its quota has been reached. "
-
                 f"Here are the database results: {readable_results}"
-
             )
 
         else:
 
             answer = (
-
                 "The database query succeeded, but Gemini is "
-
                 "temporarily unavailable or its quota has been reached. "
-
                 "The query returned no rows."
-
             )
+
+        logger.warning("Fallback answer generated from database results.")
+
+    # ----------------------------------------------
+    # FINAL RESULT
+    # ----------------------------------------------
+
+    logger.info("Detailed data analyst request completed successfully.")
 
     return {
         "sql": sql,
@@ -139,14 +177,24 @@ def ask_data_analyst_detailed(question: str) -> AnalysisResult:
     }
 
 
+# --------------------------------------------------
+# SIMPLE ANSWER INTERFACE
+# --------------------------------------------------
+
 def ask_data_analyst(question: str) -> str:
     """Answer a natural-language question using the sales database."""
 
     analysis = ask_data_analyst_detailed(question)
+
     return analysis["answer"]
 
 
+# --------------------------------------------------
+# MANUAL EXECUTION
+# --------------------------------------------------
+
 if __name__ == "__main__":
+
     logging.basicConfig(level=logging.INFO)
 
     question = "Which region generated the highest total sales?"
@@ -155,6 +203,7 @@ if __name__ == "__main__":
     print("Analyzing your data...")
 
     try:
+
         analysis = ask_data_analyst_detailed(question)
 
         print(f"\nGenerated SQL:\n{analysis['sql']}")
@@ -162,7 +211,9 @@ if __name__ == "__main__":
         print(f"\nAnswer: {analysis['answer']}")
 
     except AgentError as error:
+
         print(f"\nAgent error: {error}")
 
     except ValueError as error:
+
         print(f"\nInput error: {error}")
